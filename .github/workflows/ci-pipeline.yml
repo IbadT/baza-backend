@@ -19,11 +19,17 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: '24'
+                cache: 'npm'
+
             - name: Install deps
-              uses: npm install
+              run: npm ci
 
             - name: Testing app
-              uses: npm run test
+              run: npm run test
 
             - name: Build app
-              uses: npm run build
+              run: npm run build
