@@ -10,8 +10,6 @@ docker compose up --build -d
 ```
 
 
-
-
 Задачи:
 1. sql иньекции
 

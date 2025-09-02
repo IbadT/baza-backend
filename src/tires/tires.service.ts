@@ -34,15 +34,15 @@ interface ModelRecord {
 export class TiresService {
   constructor(
     private readonly cache: CacheService,
-    private readonly configSerice: ConfigService,
+    private readonly configService: ConfigService,
   ) {}
 
   private get config() {
     return {
-      server: this.configSerice.getOrThrow<string>('DB_HOST'),
-      database: this.configSerice.getOrThrow<string>('DB_DATABASE'),
-      user: this.configSerice.getOrThrow<string>('DB_USERNAME'),
-      password: this.configSerice.getOrThrow<string>('DB_PASSWORD'),
+      server: this.configService.getOrThrow<string>('DB_HOST'),
+      database: this.configService.getOrThrow<string>('DB_DATABASE'),
+      user: this.configService.getOrThrow<string>('DB_USERNAME'),
+      password: this.configService.getOrThrow<string>('DB_PASSWORD'),
       options: {
         encrypt: false,
         trustServerCertificate: true,
@@ -128,7 +128,7 @@ export class TiresService {
       {
         baseKey: cacheKey,
         ttl: Number(
-          this.configSerice.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
+          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
         ),
         value: response,
       },
@@ -192,7 +192,7 @@ export class TiresService {
       {
         baseKey: cacheKey,
         ttl: Number(
-          this.configSerice.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
+          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
         ),
         value: response,
       },
@@ -291,7 +291,7 @@ export class TiresService {
       {
         baseKey: cacheKey,
         ttl: Number(
-          this.configSerice.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
+          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
         ),
         value: response,
       },
