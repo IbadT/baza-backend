@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: baza-shop-app
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: "144.126.152.180"
+      DB_PORT: "1433"
+      DB_USERNAME: "dev"
+      DB_PASSWORD: "54^JhDd9$>O&"
+      DB_DATABASE: "GoodsDatas"
+      REDIS_URL: "redis://redis:6379"
+      NODE_ENV: "development"
+      PORT: "3000"
+      SENTRY_DSN: "https://7f92264b9cb7d331b1797060f79a5453@o4504702503682048.ingest.us.sentry.io/4509927721205760"
+      BASE_URL: "http://localhost:3000"
+      ALLOWED_API_KEYS: "test-api-key-123,prod-api-key-456,dev-api-key-789,test"
+      SECRET_TOKEN: "your-super-secret-jwt-key-here-change-in-production"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # использовалась команда docker desktop для установки mssql
+  # softwareupdate --install-rosetta --agree-to-license
