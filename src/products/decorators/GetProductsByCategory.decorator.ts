@@ -19,7 +19,6 @@ export const GetProductsByCategoryApiDocs = () => {
 **Поддерживаемые категории:**
 - \`tires\` - шины
 - \`wheels\` - диски  
-- \`accessories\` - аксессуары
 
 **Фильтры для шин:**
 - Размеры (width, height, diameter)
@@ -167,39 +166,33 @@ export const GetProductsByCategoryApiDocs = () => {
             items: {
               type: 'object',
               properties: {
-                ID: { type: 'number', example: 1 },
-                ModelID: { type: 'number', example: 123 },
-                ModelName: { type: 'string', example: 'Pilot Sport 4' },
-                VendorName: { type: 'string', example: 'Michelin' },
-                CategoryName: { type: 'string', example: 'Шины' },
-                CategoryURL: { type: 'string', example: 'tires' },
-                PriceVendor: {
-                  type: 'string',
-                  example: 'Michelin',
-                  nullable: true,
+                id: { type: 'string', example: 'uuid-123' },
+                productId: { type: 'number', example: 123 },
+                customerId: { type: 'number', example: 456 },
+                customerName: { type: 'string', example: 'Поставщик А' },
+                category: { type: 'string', example: 'Шины' },
+                categoryId: { type: 'number', example: 1 },
+                name: { type: 'string', example: 'Pilot Sport 4' },
+                price: { type: 'number', example: 8500 },
+                quantity: { type: 'number', example: 10 },
+                reserved: { type: 'number', example: 2 },
+                customerPoint: { type: 'string', example: 'Склад 1' },
+                code: { type: 'string', example: 'PS4-205-55-16' },
+                season: { type: 'string', example: 'summer' },
+                comment: { type: 'string', example: 'Летние шины' },
+                model: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number', example: 123 },
+                    name: { type: 'string', example: 'Pilot Sport 4' },
+                    vendorId: { type: 'number', example: 789 },
+                    photos: { 
+                      type: 'array', 
+                      items: { type: 'string' },
+                      example: ['photo1.jpg', 'photo2.jpg']
+                    },
+                  },
                 },
-                PriceModelName: {
-                  type: 'string',
-                  example: 'Pilot Sport 4',
-                  nullable: true,
-                },
-                FullSizeCaption: {
-                  type: 'string',
-                  example: '205/55 R16 91V',
-                  nullable: true,
-                },
-                Season: { type: 'number', example: 1, nullable: true },
-                Indexes: { type: 'string', example: '91V', nullable: true },
-                Runflat: { type: 'boolean', example: false, nullable: true },
-                Spikes: { type: 'boolean', example: false, nullable: true },
-                WholePrice: { type: 'number', example: 8500, nullable: true },
-                Quantity: { type: 'number', example: 10, nullable: true },
-                AdditionalSpecifications: {
-                  type: 'string',
-                  example: 'Летние',
-                  nullable: true,
-                },
-                Specifications: { type: 'object', example: {}, nullable: true },
               },
             },
           },

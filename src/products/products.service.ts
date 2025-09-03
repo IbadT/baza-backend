@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as sql from 'mssql';
 import { ConfigService } from '@nestjs/config';
 import { CacheService } from 'src/cache/cacheService.service';
-import { IResponseRows } from './types/types';
+import { IResponseProductsRows } from './types/types';
 import { GetProductQueryDTO } from './dto/get-product-query.dto';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class ProductsService {
   async findAllProductsByCategory(
     query: GetProductQueryDTO,
     xDomain: string,
-  ): Promise<IResponseRows | null> {
+  ): Promise<IResponseProductsRows | null> {
     const { category, page, limit, sortdBy = 'price_asc' } = query;
 
     if (category === 'tires') {

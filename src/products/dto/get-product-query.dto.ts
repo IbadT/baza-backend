@@ -17,11 +17,11 @@ export class GetProductQueryDTO {
     example: 'tires',
     description: 'Категория: wheels (диски)',
     required: true,
-    enum: ['tires', 'wheels', 'accessories'],
+    enum: ['tires', 'wheels'],
     // enum: ["wheels"],
   })
   @IsString({ message: 'Поле должно быть строкой' })
-  @IsIn(['tires', 'wheels', 'accessories'], {
+  @IsIn(['tires', 'wheels'], {
     message: 'Выбрана неверная категория',
   })
   readonly category: string;

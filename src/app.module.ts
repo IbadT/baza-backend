@@ -6,6 +6,7 @@ import { TiresModule } from './tires/tires.module';
 import { XDomainMiddleware } from './middlewares/x-domain.middleware';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { JwtAuthModule } from './jwt/jwt.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { JwtAuthModule } from './jwt/jwt.module';
     JwtAuthModule,
     ProductsModule,
     TiresModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],
