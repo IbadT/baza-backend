@@ -19,6 +19,12 @@ services:
       BASE_URL: "http://localhost:3000"
       ALLOWED_API_KEYS: "test-api-key-123,prod-api-key-456,dev-api-key-789,test"
       SECRET_TOKEN: "your-super-secret-jwt-key-here-change-in-production"
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_IN: 7d
+      JWT_SUPER_SECRET_WORD: super_secret_word
+      REDIS_DEFAULT_TTL: 3600
+      REDIS_DEFAULT_PRODUCTS_TTL: 1800
+      PHOTOS_BASE_URL: "https://example.com/images/"
     depends_on:
       - redis
     restart: unless-stopped

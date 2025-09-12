@@ -48,73 +48,81 @@ export const LoginApiDocs = () => {
       schema: {
         type: 'object',
         properties: {
-          success: {
-            type: 'boolean',
-            example: true,
-          },
-          user: {
-            type: 'object',
-            properties: {
-              // AspNetUsers поля
-              Id: {
-                type: 'string',
-                example: 'user-uuid-123',
-                nullable: true,
-              },
-              Email: {
-                type: 'string',
-                example: 'user@example.com',
-                nullable: true,
-              },
-              UserName: {
-                type: 'string',
-                example: 'username',
-                nullable: true,
-              },
-              EmailConfirmed: {
-                type: 'boolean',
-                example: true,
-                nullable: true,
-              },
-              // auth_user поля (Django)
-              id: {
-                type: 'number',
-                example: 1,
-                nullable: true,
-              },
-              email: {
-                type: 'string',
-                example: 'user@example.com',
-                nullable: true,
-              },
-              username: {
-                type: 'string',
-                example: 'username',
-                nullable: true,
-              },
-              first_name: {
-                type: 'string',
-                example: 'Иван',
-                nullable: true,
-              },
-              last_name: {
-                type: 'string',
-                example: 'Иванов',
-                nullable: true,
-              },
-              is_superuser: {
-                type: 'boolean',
-                example: false,
-                nullable: true,
-              },
-              last_login: {
-                type: 'string',
-                format: 'date-time',
-                example: '2024-01-15T10:30:00Z',
-                nullable: true,
-              },
+            accessToken: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU3NTkxOTQ2fQ.6YjlOdQyqqLhoJ9g0wIrXsKDMgNNOvEHMlKZthwWHCM',
             },
-          },
+            refreshToken: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU4MTk1ODQ2fQ.Sy_-nUq7gMovguNT0He8VQKS6kuW185kn_NtLA8cXJI',
+            },
+          // success: {
+          //   type: 'boolean',
+          //   example: true,
+          // },
+          // user: {
+          //   type: 'object',
+          //   properties: {
+          //     // AspNetUsers поля
+          //     Id: {
+          //       type: 'string',
+          //       example: 'user-uuid-123',
+          //       nullable: true,
+          //     },
+          //     Email: {
+          //       type: 'string',
+          //       example: 'user@example.com',
+          //       nullable: true,
+          //     },
+          //     UserName: {
+          //       type: 'string',
+          //       example: 'username',
+          //       nullable: true,
+          //     },
+          //     EmailConfirmed: {
+          //       type: 'boolean',
+          //       example: true,
+          //       nullable: true,
+          //     },
+          //     // auth_user поля (Django)
+          //     id: {
+          //       type: 'number',
+          //       example: 1,
+          //       nullable: true,
+          //     },
+          //     email: {
+          //       type: 'string',
+          //       example: 'user@example.com',
+          //       nullable: true,
+          //     },
+          //     username: {
+          //       type: 'string',
+          //       example: 'username',
+          //       nullable: true,
+          //     },
+          //     first_name: {
+          //       type: 'string',
+          //       example: 'Иван',
+          //       nullable: true,
+          //     },
+          //     last_name: {
+          //       type: 'string',
+          //       example: 'Иванов',
+          //       nullable: true,
+          //     },
+          //     is_superuser: {
+          //       type: 'boolean',
+          //       example: false,
+          //       nullable: true,
+          //     },
+          //     last_login: {
+          //       type: 'string',
+          //       format: 'date-time',
+          //       example: '2024-01-15T10:30:00Z',
+          //       nullable: true,
+          //     },
+          //   },
+          // },
         },
       },
     }),

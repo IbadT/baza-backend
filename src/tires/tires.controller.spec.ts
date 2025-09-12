@@ -91,7 +91,7 @@ describe('TiresController', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('test-api-key,another-key'),
-            getOrThrow: jest.fn().mockReturnValue('test-secret'),
+            getOrThrow: jest.fn().mockReturnValue('your-super-secret-jwt-key-here-change-in-production'),
           },
         },
         {

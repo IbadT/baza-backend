@@ -15,10 +15,10 @@ import { AuthGuard } from 'src/guards/auth.guard';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get('/debug-sentry')
-  getError() {
-    throw new Error('My first Sentry error!');
-  }
+  // @Get('/debug-sentry')
+  // getError() {
+  //   throw new Error('My first Sentry error!');
+  // }
 
   // curl -X GET "http://localhost:3000/api/products?category=tires&page=1&limit=10&sortdBy=price_asc" -H "X-Domain: domain.ru"
   // curl -G "http://localhost:3000/api/products" \
@@ -34,7 +34,13 @@ export class ProductsController {
     @Query() query: GetProductQueryDTO,
     @Req() req: Request,
   ) {
-    const xDomain = getXDomainHeader(req);
-    return await this.productsService.findAllProductsByCategory(query, xDomain);
+    const startTime = Date.now();
+    try {
+      const xDomain = getXDomainHeader(req);
+      return await this.productsService.findAllProductsByCategory({...query, page: Number(query.page), limit: Number(query.limit)}, xDomain);
+    } finally {
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️  [ProductsController.findAllProductsByCategory] Execution time: ${executionTime}ms`);
+    }
   }
 }

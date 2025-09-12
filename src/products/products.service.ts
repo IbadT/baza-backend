@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { CacheService } from 'src/cache/cacheService.service';
 import { IResponseProductsRows } from './types/types';
 import { GetProductQueryDTO } from './dto/get-product-query.dto';
+import { IProductModel } from './types/product.types';
 
 @Injectable()
 export class ProductsService {
@@ -28,7 +29,8 @@ export class ProductsService {
   async findAllProductsByCategory(
     query: GetProductQueryDTO,
     xDomain: string,
-  ): Promise<IResponseProductsRows | null> {
+  // ): Promise<IResponseProductsRows | null> {
+  ){
     const { category, page, limit, sortdBy = 'price_asc' } = query;
 
     if (category === 'tires') {
@@ -71,33 +73,37 @@ export class ProductsService {
         orderByClause = 'ORDER BY p.ID ASC';
     }
 
+    // Показываем все товары всем пользователям
     const queryString = `
       SELECT 
-        p.ID,
-        p.ModelID,
-        p.AdditionalSpecifications,
-        p.Specifications,
-        m.Name as ModelName,
-        v.Name as VendorName,
-        c.Name as CategoryName,
-        c.URL as CategoryURL,
-        pa.Vendor as PriceVendor,
-        pa.ModelName as PriceModelName,
-        pa.FullSizeCaption,
-        pa.AdditionalSpecifications as PriceAdditionalSpecs,
-        pa.Season,
-        pa.Indexes,
-        pa.Runflat,
-        pa.Spikes,
-        pa.WholePrice,
-        pa.Quantity
+        p.ID as id,
+        p.ID as productId,
+        0 as customerId,
+        c.Name as category,
+        c.ID as categoryId,
+        m.Name as name,
+        pa.WholePrice as price,
+        pa.Quantity as quantity,
+        0 as reserved,
+        '0' as customerPoint,
+        '' as code,
+        CASE 
+          WHEN pa.Season = 0 THEN 'summer'
+          WHEN pa.Season = 1 THEN 'winter'
+          WHEN pa.Season = 2 THEN 'allseason'
+          ELSE ''
+        END as season,
+        '' as comment,
+        m.ID as modelId,
+        m.Name as modelName,
+        v.ID as vendorId
       FROM Products p
       JOIN Models m ON m.ID = p.ModelID
       JOIN Vendors v ON v.ID = m.VendorID
       JOIN Categories c ON c.ID = v.CategoryID
-      LEFT JOIN PriceActual pa ON pa.ProductID = p.ID
+      INNER JOIN PriceActual pa ON pa.ProductID = p.ID
       WHERE c.URL = @category
-      ${orderByClause}
+      ${orderByClause.replace('pa.WholePrice', 'pa.WholePrice')}
       OFFSET @offset ROWS 
       FETCH NEXT @limit ROWS ONLY
     `;
@@ -110,13 +116,58 @@ export class ProductsService {
       .input('limit', sql.Int, limit)
       .query(queryString);
 
+    // Преобразуем данные в формат IProductModel с фотографиями
+    const data = await Promise.all(result.recordset.map(async (row) => {
+      // Получаем фотографии для модели
+      const photosQuery = `
+        SELECT mp.Path as photoPath
+        FROM ModelPhotos mp
+        WHERE mp.ModelId = @modelId
+        AND mp.ShowInCatalog = 1
+        ORDER BY mp.IsMain DESC
+      `;
+      
+      const photosResult = await pool.request()
+        .input('modelId', sql.Int, row.modelId)
+        .query(photosQuery);
+      
+      // Формируем массив URL фотографий
+      const photos = photosResult.recordset.map(photo => {
+        // Базовый URL для фотографий (нужно настроить в конфиге)
+        const baseUrl = process.env.PHOTOS_BASE_URL || 'https://example.com/images/';
+        return baseUrl + photo.photoPath;
+      });
+      
+      return {
+        id: row.id,
+        productId: row.productId,
+        customerId: row.customerId,
+        category: row.category,
+        categoryId: row.categoryId,
+        name: row.name,
+        price: row.price,
+        quantity: row.quantity,
+        reserved: row.reserved,
+        customerPoint: row.customerPoint,
+        code: row.code,
+        season: row.season,
+        comment: row.comment,
+        model: {
+          id: row.modelId,
+          name: row.modelName,
+          vendorId: row.vendorId,
+          photos: photos
+        }
+      };
+    }));
+
     const response = {
       count: result.recordset.length,
       page,
       limit,
       totalPages: Math.ceil(result.recordset.length / limit),
       success: true,
-      data: result.recordset,
+      data: data,
     };
 
     // await this.cache.set(
@@ -245,36 +296,40 @@ export class ProductsService {
       whereConditions.push('pa.FullSizeCaption IS NOT NULL');
     }
 
+    // Показываем все товары всем пользователям
     const queryString = `
-        SELECT 
-          p.ID,
-          p.ModelID,
-          p.AdditionalSpecifications,
-          p.Specifications,
-          m.Name as ModelName,
-          v.Name as VendorName,
-          c.Name as CategoryName,
-          c.URL as CategoryURL,
-          pa.Vendor as PriceVendor,
-          pa.ModelName as PriceModelName,
-          pa.FullSizeCaption,
-          pa.AdditionalSpecifications as PriceAdditionalSpecs,
-          pa.Season,
-          pa.Indexes,
-          pa.Runflat,
-          pa.Spikes,
-          pa.WholePrice,
-          pa.Quantity
-        FROM Products p
-        JOIN Models m ON m.ID = p.ModelID
-        JOIN Vendors v ON v.ID = m.VendorID
-        JOIN Categories c ON c.ID = v.CategoryID
-        LEFT JOIN PriceActual pa ON pa.ProductID = p.ID
-        WHERE ${whereConditions.join(' AND ')}
-        ${orderByClause}
-        OFFSET @offset ROWS 
-        FETCH NEXT @limit ROWS ONLY
-      `;
+      SELECT 
+        p.ID as id,
+        p.ID as productId,
+        0 as customerId,
+        c.Name as category,
+        c.ID as categoryId,
+        m.Name as name,
+        pa.WholePrice as price,
+        pa.Quantity as quantity,
+        0 as reserved,
+        '0' as customerPoint,
+        '' as code,
+        CASE 
+          WHEN pa.Season = 0 THEN 'summer'
+          WHEN pa.Season = 1 THEN 'winter'
+          WHEN pa.Season = 2 THEN 'allseason'
+          ELSE ''
+        END as season,
+        '' as comment,
+        m.ID as modelId,
+        m.Name as modelName,
+        v.ID as vendorId
+      FROM Products p
+      JOIN Models m ON m.ID = p.ModelID
+      JOIN Vendors v ON v.ID = m.VendorID
+      JOIN Categories c ON c.ID = v.CategoryID
+      INNER JOIN PriceActual pa ON pa.ProductID = p.ID
+      WHERE ${whereConditions.join(' AND ')}
+      ${orderByClause}
+      OFFSET @offset ROWS 
+      FETCH NEXT @limit ROWS ONLY
+    `;
 
     const pool = await sql.connect(this.config);
     const request = pool
@@ -325,13 +380,58 @@ export class ProductsService {
 
     const result = await request.query(queryString);
 
+    // Преобразуем данные в формат IProductModel с фотографиями
+    const data = await Promise.all(result.recordset.map(async (row) => {
+      // Получаем фотографии для модели
+      const photosQuery = `
+        SELECT mp.Path as photoPath
+        FROM ModelPhotos mp
+        WHERE mp.ModelId = @modelId
+        AND mp.ShowInCatalog = 1
+        ORDER BY mp.IsMain DESC
+      `;
+      
+      const photosResult = await pool.request()
+        .input('modelId', sql.Int, row.modelId)
+        .query(photosQuery);
+      
+      // Формируем массив URL фотографий
+      const photos = photosResult.recordset.map(photo => {
+        // Базовый URL для фотографий (нужно настроить в конфиге)
+        const baseUrl = process.env.PHOTOS_BASE_URL || 'https://example.com/images/';
+        return baseUrl + photo.photoPath;
+      });
+      
+      return {
+        id: row.id,
+        productId: row.productId,
+        customerId: row.customerId,
+        category: row.category,
+        categoryId: row.categoryId,
+        name: row.name,
+        price: row.price,
+        quantity: row.quantity,
+        reserved: row.reserved,
+        customerPoint: row.customerPoint,
+        code: row.code,
+        season: row.season,
+        comment: row.comment,
+        model: {
+          id: row.modelId,
+          name: row.modelName,
+          vendorId: row.vendorId,
+          photos: photos
+        }
+      };
+    }));
+
     const response = {
-      success: true,
-      data: result.recordset,
-      count: result.recordset.length,
       page,
       limit,
       totalPages: Math.ceil(result.recordset.length / limit),
+      count: result.recordset.length,
+      success: true,
+      data: data,
     };
 
     await this.cache.set(
@@ -379,26 +479,25 @@ export class ProductsService {
         orderByClause = 'ORDER BY p.ID ASC';
     }
 
+    // Показываем все товары всем пользователям (без цен пока)
     const queryString = `
       SELECT 
-        p.ID,
-        p.ModelID,
-        p.AdditionalSpecifications,
-        p.Specifications,
-        m.Name as ModelName,
-        v.Name as VendorName,
-        c.Name as CategoryName,
-        c.URL as CategoryURL,
-        NULL as PriceVendor,
-        NULL as PriceModelName,
-        NULL as FullSizeCaption,
-        NULL as PriceAdditionalSpecs,
-        NULL as Season,
-        NULL as Indexes,
-        NULL as Runflat,
-        NULL as Spikes,
-        NULL as WholePrice,
-        NULL as Quantity
+        p.ID as id,
+        p.ID as productId,
+        0 as customerId,
+        c.Name as category,
+        c.ID as categoryId,
+        m.Name as name,
+        NULL as price,
+        NULL as quantity,
+        0 as reserved,
+        '0' as customerPoint,
+        '' as code,
+        '' as season,
+        '' as comment,
+        m.ID as modelId,
+        m.Name as modelName,
+        v.ID as vendorId
       FROM Products p
       JOIN Models m ON m.ID = p.ModelID
       JOIN Vendors v ON v.ID = m.VendorID
@@ -410,19 +509,79 @@ export class ProductsService {
     `;
 
     const pool = await sql.connect(this.config);
+    
+    // Сначала получаем общее количество записей для дисков
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM Products p
+      JOIN Models m ON m.ID = p.ModelID
+      JOIN Vendors v ON v.ID = m.VendorID
+      JOIN Categories c ON c.ID = v.CategoryID
+      WHERE c.URL = 'wheels'
+    `;
+    
+    const countResult = await pool.request().query(countQuery);
+    const totalCount = countResult.recordset[0].total;
+    
+    // Затем получаем данные для текущей страницы
     const result = await pool
       .request()
       .input('offset', sql.Int, offset)
       .input('limit', sql.Int, limit)
       .query(queryString);
 
+    // Преобразуем данные в формат IProductModel с фотографиями
+    const data = await Promise.all(result.recordset.map(async (row) => {
+      // Получаем фотографии для модели
+      const photosQuery = `
+        SELECT mp.Path as photoPath
+        FROM ModelPhotos mp
+        WHERE mp.ModelId = @modelId
+        AND mp.ShowInCatalog = 1
+        ORDER BY mp.IsMain DESC
+      `;
+      
+      const photosResult = await pool.request()
+        .input('modelId', sql.Int, row.modelId)
+        .query(photosQuery);
+      
+      // Формируем массив URL фотографий
+      const photos = photosResult.recordset.map(photo => {
+        // Базовый URL для фотографий (нужно настроить в конфиге)
+        const baseUrl = process.env.PHOTOS_BASE_URL || 'https://example.com/images/';
+        return baseUrl + photo.photoPath;
+      });
+      
+      return {
+        id: row.id,
+        productId: row.productId,
+        customerId: row.customerId,
+        category: row.category,
+        categoryId: row.categoryId,
+        name: row.name,
+        price: row.price,
+        quantity: row.quantity,
+        reserved: row.reserved,
+        customerPoint: row.customerPoint,
+        code: row.code,
+        season: row.season,
+        comment: row.comment,
+        model: {
+          id: row.modelId,
+          name: row.modelName,
+          vendorId: row.vendorId,
+          photos: photos
+        }
+      };
+    }));
+
     const response = {
       count: result.recordset.length,
       page,
       limit,
-      totalPages: Math.ceil(result.recordset.length / limit),
+      totalPages: Math.ceil(totalCount / limit),
       success: true,
-      data: result.recordset,
+      data: data,
     };
 
     await this.cache.set(
@@ -437,5 +596,5 @@ export class ProductsService {
     );
 
     return response;
-  }
-}
+  };
+};

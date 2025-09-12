@@ -248,7 +248,7 @@ export class TiresService {
           WHEN pa.Season = 0 THEN 'summer'
           WHEN pa.Season = 1 THEN 'winter'
           WHEN pa.Season = 2 THEN 'all-season'
-          ELSE 'unknown'
+          ELSE ''
         END as SeasonName,
         ROW_NUMBER() OVER (PARTITION BY m.ID ORDER BY COUNT(pa.ProductID) DESC) as rn
       FROM Models m

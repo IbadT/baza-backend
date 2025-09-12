@@ -32,3 +32,60 @@ export interface IProductQueryOptions {
   pagination: IProductPagination;
   xDomain: string;
 }
+
+
+
+
+
+
+
+
+
+
+export interface IProductModel {
+  id: string;
+  productId: number;
+  customerId: number;
+  // customerName: string;
+  category: string;
+  categoryId: number;
+  name: string;
+  price: number;
+  quantity: number;
+  reserved: number;
+  customerPoint: string;
+  code: string;
+  season: string;
+  comment: string;
+  model: {
+    id: number;
+    name: string;
+    vendorId: number;
+    photos: string[];
+  };
+  // vendorId: number;
+  // photos: string[];
+}
+
+export interface IPdocutWheelModel {
+  id: string;
+  productId: number;
+  customerId: number;
+  customerName: string;
+  category: string;
+  categoryId: number;
+  name: string;
+  price: number;
+  quantity: number;
+  reserved: number;
+  customerPoint: string;
+  code: string;
+  season: string;
+  comment: string;
+  model: {
+    id: number;
+    name: string;
+    vendorId: number;
+    photos: string[];
+  };
+}

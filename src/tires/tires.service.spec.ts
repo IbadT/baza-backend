@@ -92,7 +92,7 @@ describe('TiresService', () => {
                 DB_DATABASE: 'testdb',
                 DB_USERNAME: 'testuser',
                 DB_PASSWORD: 'testpass',
-                SECRET_TOKEN: 'test-secret',
+                SECRET_TOKEN: 'your-super-secret-jwt-key-here-change-in-production',
               };
               return config[key];
             }),

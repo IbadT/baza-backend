@@ -19,24 +19,26 @@ describe('ProductsController', () => {
     success: true,
     data: [
       {
-        ID: 1,
-        ModelID: 1,
-        AdditionalSpecifications: null,
-        Specifications: null,
-        ModelName: 'Test Tire',
-        VendorName: 'Test Vendor',
-        CategoryName: 'Tires',
-        CategoryURL: 'tires',
-        PriceVendor: 'Test Price Vendor',
-        PriceModelName: 'Test Price Model',
-        FullSizeCaption: '205/55R16',
-        PriceAdditionalSpecs: null,
-        Season: 0,
-        Indexes: '91V',
-        Runflat: false,
-        Spikes: false,
-        WholePrice: 100,
-        Quantity: 10,
+        id: 'test-id-1',
+        productId: 1,
+        customerId: 1,
+        customerName: 'Test Customer',
+        category: 'Tires',
+        categoryId: 1,
+        name: 'Test Tire',
+        price: 100,
+        quantity: 10,
+        reserved: 0,
+        customerPoint: 'Test Point',
+        code: 'TEST001',
+        season: 'Summer',
+        comment: 'Test comment',
+        model: {
+          id: 1,
+          name: 'Test Model',
+          vendorId: 1,
+          photos: [],
+        },
       },
     ],
     count: 1,
@@ -83,7 +85,7 @@ describe('ProductsController', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('test-api-key,another-key'),
-            getOrThrow: jest.fn().mockReturnValue('test-secret'),
+            getOrThrow: jest.fn().mockReturnValue('your-super-secret-jwt-key-here-change-in-production'),
           },
         },
         {
@@ -160,9 +162,4 @@ describe('ProductsController', () => {
     });
   });
 
-  describe('getError', () => {
-    it('should throw an error', () => {
-      expect(() => controller.getError()).toThrow('My first Sentry error!');
-    });
-  });
 });

@@ -89,6 +89,7 @@ describe('ProductsService', () => {
                 DB_DATABASE: 'testdb',
                 DB_USERNAME: 'testuser',
                 DB_PASSWORD: 'testpass',
+                REDIS_DEFAULT_PRODUCTS_TTL: '300',
               };
               return config[key];
             }),
@@ -142,6 +143,9 @@ describe('ProductsService', () => {
         rowsAffected: [1],
       };
 
+      // Mock cache.get to return null (no cache hit)
+      (cacheService.get as jest.Mock).mockResolvedValue(null);
+      
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
@@ -149,8 +153,8 @@ describe('ProductsService', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result?.success).toBe(true);
-      expect(result?.data).toHaveLength(1);
+      expect((result as any)?.success).toBe(true);
+      expect((result as any)?.data).toHaveLength(1);
       expect(sql.connect).toHaveBeenCalled();
       expect(mockPool.request).toHaveBeenCalled();
     });
@@ -190,6 +194,9 @@ describe('ProductsService', () => {
         rowsAffected: [1],
       };
 
+      // Mock cache.get to return null (no cache hit)
+      (cacheService.get as jest.Mock).mockResolvedValue(null);
+      
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
@@ -197,8 +204,8 @@ describe('ProductsService', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result?.success).toBe(true);
-      expect(result?.data).toHaveLength(1);
+      expect((result as any)?.success).toBe(true);
+      expect((result as any)?.data).toHaveLength(1);
       expect(sql.connect).toHaveBeenCalled();
     });
 
@@ -276,6 +283,10 @@ describe('ProductsService', () => {
       // Arrange
       const xDomain = 'test.ru';
       const mockResult = { recordset: [], rowsAffected: [0] };
+      
+      // Mock cache.get to return null (no cache hit)
+      (cacheService.get as jest.Mock).mockResolvedValue(null);
+      
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
@@ -283,9 +294,9 @@ describe('ProductsService', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result?.success).toBe(true);
-      expect(result?.data).toHaveLength(0);
-      expect(result?.count).toBe(0);
+      expect((result as any)?.success).toBe(true);
+      expect((result as any)?.data).toHaveLength(0);
+      expect((result as any)?.count).toBe(0);
     });
   });
 

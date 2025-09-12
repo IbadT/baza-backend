@@ -30,9 +30,15 @@ export class TiresController {
     @Query() query: GetPupularSizesQueryDTO,
     @Req() req: Request,
   ): Promise<IResponsePopularSize | null> {
-    const xDomain = getXDomainHeader(req);
-    // !!! limitPerDiameter опциональный может быть undefined
-    return this.tiresService.findAllPopularSize(query, xDomain);
+    const startTime = Date.now();
+    try {
+      const xDomain = getXDomainHeader(req);
+      // !!! limitPerDiameter опциональный может быть undefined
+      return this.tiresService.findAllPopularSize(query, xDomain);
+    } finally {
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️  [TiresController.findAllPopularSize] Execution time: ${executionTime}ms`);
+    }
   }
 
   @GetPopularBrandsApiDocs()
@@ -42,10 +48,16 @@ export class TiresController {
     @Query() query: GetPupularBrandsQueryDTO,
     @Req() req: Request,
   ): Promise<IResponsePopularBrands | null> {
-    const { limit = 10 } = query;
+    const startTime = Date.now();
+    try {
+      const { limit = 10 } = query;
 
-    const xDomain = getXDomainHeader(req);
-    return this.tiresService.findAllPopularBrands(limit, xDomain);
+      const xDomain = getXDomainHeader(req);
+      return this.tiresService.findAllPopularBrands(limit, xDomain);
+    } finally {
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️  [TiresController.findAllPopularBrands] Execution time: ${executionTime}ms`);
+    }
   }
 
   @GetPopularBrandModelsApiDocs()
@@ -55,7 +67,13 @@ export class TiresController {
     @Param('brandId') brandId: string,
     @Req() req: Request,
   ): Promise<IResponsePopularBrandModels | null> {
-    const xDomain = getXDomainHeader(req);
-    return this.tiresService.findAllPopularBrandModels(brandId, xDomain);
+    const startTime = Date.now();
+    try {
+      const xDomain = getXDomainHeader(req);
+      return this.tiresService.findAllPopularBrandModels(brandId, xDomain);
+    } finally {
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️  [TiresController.findAllPopularBrandModels] Execution time: ${executionTime}ms`);
+    }
   }
 }

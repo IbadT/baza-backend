@@ -27,8 +27,11 @@ export class CacheService {
     baseKey: string,
     ...params: (string | number)[]
   ): Promise<T | null> {
+    console.log('get', baseKey, ...params);
     const key = this.buildCacheKey(baseKey, ...params);
+    console.log('key', key);
     const data = await this.redis.get(key);
+    console.log('data', data);
     return data ? (JSON.parse(data) as T) : null;
   }
 

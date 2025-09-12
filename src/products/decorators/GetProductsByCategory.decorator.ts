@@ -53,7 +53,7 @@ export const GetProductsByCategoryApiDocs = () => {
     // Основные параметры
     ApiQuery({
       name: 'category',
-      enum: ['tires', 'wheels', 'accessories'],
+      enum: ['tires', 'wheels'],
       required: true,
       description: 'Категория товаров для фильтрации',
       example: 'tires',

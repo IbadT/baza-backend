@@ -8,5 +8,3 @@ cp .env.example .env
 ```bash
 docker compose up --build -d
 ```
-
-# ПРОВЕРИТЬ ПРАВИЛЬНОСТЬ АВТОРИЗАЦИИ С БД

@@ -25,11 +25,12 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
+      const secret = this.configService.getOrThrow<string>('SECRET_TOKEN');
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.getOrThrow<string>('SECRET_TOKEN'),
+        secret: secret,
       });
       request.user = payload;
-    } catch {
+    } catch (error) {
       throw new UnauthorizedException('Неверный токен');
     }
     return true;
@@ -38,5 +39,5 @@ export class AuthGuard implements CanActivate {
   private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
-  }
-}
+  };
+};
