@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { PasswordVerifierService } from './password-verifier.service';
 import { JwtService } from '@nestjs/jwt';
+import { DatabaseService } from 'src/database/database.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -29,6 +30,12 @@ describe('AuthController', () => {
           provide: JwtService,
           useValue: {
             signAsync: jest.fn().mockResolvedValue('test-token'),
+          },
+        },
+        {
+          provide: DatabaseService,
+          useValue: {
+            getPool: jest.fn(),
           },
         },
       ],

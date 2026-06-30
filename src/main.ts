@@ -13,6 +13,8 @@ async function bootstrap() {
 
   const configService = new ConfigService();
 
+  app.enableShutdownHooks();
+
   app.setGlobalPrefix('api');
 
   app.use(
@@ -21,13 +23,22 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Глобальный фильтр для обработки всех ошибок в едином формате
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  const corsOrigins =
+    configService.get<string>('CORS_ORIGINS') ||
+    configService.get<string>('BASE_URL') ||
+    'http://localhost:3000';
+  const origins = corsOrigins
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: [configService.getOrThrow<string>('BASE_URL')],
+    origin: origins,
   });
 
   const config = new DocumentBuilder()
@@ -50,6 +61,6 @@ async function bootstrap() {
   const documentFactory = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, documentFactory);
 
-  await app.listen(configService.getOrThrow<string>('PORT') ?? 3000);
+  await app.listen(configService.get<string>('PORT') || '3000');
 }
 void bootstrap();

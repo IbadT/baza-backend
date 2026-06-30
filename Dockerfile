@@ -1,21 +1,29 @@
-FROM node:18-alpine
+# Build stage
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Копируем package.json и package-lock.json
 COPY package*.json ./
+RUN npm ci
 
-# Устанавливаем зависимости
-RUN npm ci --only=production
-
-# Копируем исходный код
 COPY . .
-
-# Собираем приложение
 RUN npm run build
 
-# Открываем порт
+# Production stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=builder /app/dist ./dist
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 3000
 
-# Запускаем приложение с флагом для поддержки crypto
-CMD ["node", "--experimental-global-webcrypto", "dist/main"]
+CMD ["node", "dist/main"]

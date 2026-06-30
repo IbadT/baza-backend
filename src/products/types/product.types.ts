@@ -33,20 +33,11 @@ export interface IProductQueryOptions {
   xDomain: string;
 }
 
-
-
-
-
-
-
-
-
-
 export interface IProductModel {
   id: string;
   productId: number;
   customerId: number;
-  // customerName: string;
+  customerName: string;
   category: string;
   categoryId: number;
   name: string;
@@ -67,7 +58,7 @@ export interface IProductModel {
   // photos: string[];
 }
 
-export interface IPdocutWheelModel {
+export interface IProductWheelModel {
   id: string;
   productId: number;
   customerId: number;

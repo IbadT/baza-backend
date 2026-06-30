@@ -39,7 +39,6 @@ export interface IProductRecord {
   };
 }
 
-
 // {
 //   "id": "bc31e091-edd7-4f45-9ae5-3025db1ccb69",
 //   "productId": 81625,
@@ -63,11 +62,6 @@ export interface IProductRecord {
 //   }
 // }
 
-
-
-
-
-
 export interface IResponseProductsRows {
   success: boolean;
   data: IProductRecord[];
@@ -76,8 +70,3 @@ export interface IResponseProductsRows {
   limit: number | string;
   totalPages: number;
 }
-
-
-
-
-

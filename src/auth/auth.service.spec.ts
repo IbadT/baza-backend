@@ -3,12 +3,13 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { PasswordVerifierService } from './password-verifier.service';
 import { JwtService } from '@nestjs/jwt';
+import { DatabaseService } from 'src/database/database.service';
 
 describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
@@ -29,10 +30,21 @@ describe('AuthService', () => {
             signAsync: jest.fn().mockResolvedValue('test-token'),
           },
         },
+        {
+          provide: DatabaseService,
+          useValue: {
+            getPool: jest.fn().mockReturnValue({
+              request: jest.fn().mockReturnValue({
+                input: jest.fn().mockReturnThis(),
+                query: jest.fn(),
+              }),
+            }),
+          },
+        },
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    service = moduleRef.get<AuthService>(AuthService);
   });
 
   it('should be defined', () => {

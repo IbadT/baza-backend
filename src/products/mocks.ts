@@ -8,7 +8,7 @@ const mockRecord: IProductRecord = {
   category: 'Легковые автошины',
   categoryId: 1,
   name: '(Лето) ARIVO ULTRA ARZ5 255/30R24 XL, 97W',
-  price: 12851.00,
+  price: 12851.0,
   quantity: 12,
   reserved: 0,
   customerPoint: 'Склад Яр',

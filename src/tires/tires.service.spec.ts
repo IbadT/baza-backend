@@ -1,20 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TiresService } from './tires.service';
-import { CacheService } from 'src/cache/cacheService.service';
+// import { CacheService } from 'src/cache/cacheService.service';
 import { ConfigService } from '@nestjs/config';
+import { DatabaseService } from 'src/database/database.service';
 import * as sql from 'mssql';
-
-// Mock mssql module
-jest.mock('mssql', () => ({
-  connect: jest.fn(),
-  Int: 'Int',
-}));
 
 describe('TiresService', () => {
   let service: TiresService;
-  let cacheService: CacheService;
+  // let cacheService: CacheService;
   let configService: ConfigService;
-  let mockPool: any;
+  let databaseService: DatabaseService;
+  let mockPool: {
+    request: jest.Mock;
+  };
 
   // Mock data
   const mockPopularSizes = {
@@ -71,18 +69,16 @@ describe('TiresService', () => {
       }),
     };
 
-    (sql.connect as jest.Mock).mockResolvedValue(mockPool);
-
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         TiresService,
-        {
-          provide: CacheService,
-          useValue: {
-            get: jest.fn(),
-            set: jest.fn(),
-          },
-        },
+        // {
+        //   provide: CacheService,
+        //   useValue: {
+        //     get: jest.fn(),
+        //     set: jest.fn(),
+        //   },
+        // },
         {
           provide: ConfigService,
           useValue: {
@@ -92,18 +88,26 @@ describe('TiresService', () => {
                 DB_DATABASE: 'testdb',
                 DB_USERNAME: 'testuser',
                 DB_PASSWORD: 'testpass',
-                SECRET_TOKEN: 'your-super-secret-jwt-key-here-change-in-production',
+                SECRET_TOKEN:
+                  'your-super-secret-jwt-key-here-change-in-production',
               };
               return config[key];
             }),
           },
         },
+        {
+          provide: DatabaseService,
+          useValue: {
+            getPool: jest.fn().mockReturnValue(mockPool),
+          },
+        },
       ],
     }).compile();
 
-    service = module.get<TiresService>(TiresService);
-    cacheService = module.get<CacheService>(CacheService);
-    configService = module.get<ConfigService>(ConfigService);
+    service = moduleRef.get<TiresService>(TiresService);
+    // cacheService = moduleRef.get<CacheService>(CacheService);
+    configService = moduleRef.get<ConfigService>(ConfigService);
+    databaseService = moduleRef.get<DatabaseService>(DatabaseService);
   });
 
   afterEach(() => {
@@ -117,39 +121,19 @@ describe('TiresService', () => {
   });
 
   describe('findAllPopularSize', () => {
-    it('should return cached data when available', async () => {
-      // Arrange
+    // it('should return cached data when available', async () => {
+    //   const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
+    //   const xDomain = 'test.ru';
+    //   const cacheSpy = jest.spyOn(cacheService, 'get').mockResolvedValue(mockPopularSizes);
+    //   const result = await service.findAllPopularSize(query, xDomain);
+    //   expect(result).toEqual(mockPopularSizes);
+    //   expect(cacheSpy).toHaveBeenCalledWith('popular-sizes', query.minDiameter, query.maxDiameter, query.limitPerDiameter, xDomain);
+    //   expect(databaseService.getPool).not.toHaveBeenCalled();
+    // });
+
+    it('should query database and return results', async () => {
       const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
       const xDomain = 'test.ru';
-      const cacheSpy = jest
-        .spyOn(cacheService, 'get')
-        .mockResolvedValue(mockPopularSizes);
-
-      // Act
-      const result = await service.findAllPopularSize(query, xDomain);
-
-      // Assert
-      expect(result).toEqual(mockPopularSizes);
-      expect(cacheSpy).toHaveBeenCalledWith(
-        'popular-sizes',
-        query.minDiameter,
-        query.maxDiameter,
-        query.limitPerDiameter,
-        xDomain,
-      );
-      expect(sql.connect).not.toHaveBeenCalled();
-    });
-
-    it('should query database when cache is empty', async () => {
-      // Arrange
-      const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
-      const xDomain = 'test.ru';
-      const cacheSpy = jest
-        .spyOn(cacheService, 'get')
-        .mockResolvedValue(null);
-      const setCacheSpy = jest
-        .spyOn(cacheService, 'set')
-        .mockResolvedValue(undefined);
 
       const mockResult = {
         recordset: [
@@ -164,70 +148,56 @@ describe('TiresService', () => {
 
       mockPool.request().query.mockResolvedValue(mockResult);
 
-      // Act
       const result = await service.findAllPopularSize(query, xDomain);
 
-      // Assert
       expect(result).toBeDefined();
-      expect(cacheSpy).toHaveBeenCalled();
-      expect(setCacheSpy).toHaveBeenCalled();
-      expect(sql.connect).toHaveBeenCalled();
+      expect(databaseService.getPool).toHaveBeenCalled();
       expect(mockPool.request).toHaveBeenCalled();
     });
 
     it('should use default limitPerDiameter when not provided', async () => {
-      // Arrange
       const query = { minDiameter: 16, maxDiameter: 20 };
       const xDomain = 'test.ru';
-      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
-      jest.spyOn(cacheService, 'set').mockResolvedValue(undefined);
 
       const mockResult = { recordset: [] };
       mockPool.request().query.mockResolvedValue(mockResult);
 
-      // Act
       await service.findAllPopularSize(query, xDomain);
 
-      // Assert
-      expect(mockPool.request().input).toHaveBeenCalledWith('limitPerDiameter', 'Int', 5);
+      expect(mockPool.request().input).toHaveBeenCalledWith(
+        'limitPerDiameter',
+        sql.Int,
+        5,
+      );
     });
 
     it('should handle database errors gracefully', async () => {
-      // Arrange
       const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
       const xDomain = 'test.ru';
-      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
-      (sql.connect as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
+      (databaseService.getPool as jest.Mock).mockImplementation(() => {
+        throw new Error('Database connection failed');
+      });
 
-      // Act & Assert
-      await expect(service.findAllPopularSize(query, xDomain)).rejects.toThrow('Database connection failed');
+      await expect(service.findAllPopularSize(query, xDomain)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
   });
 
   describe('findAllPopularBrands', () => {
-    it('should return cached data when available', async () => {
-      // Arrange
+    // it('should return cached data when available', async () => {
+    //   const limit = 5;
+    //   const xDomain = 'test.ru';
+    //   const cacheSpy = jest.spyOn(cacheService, 'get').mockResolvedValue(mockPopularBrands);
+    //   const result = await service.findAllPopularBrands(limit, xDomain);
+    //   expect(result).toEqual(mockPopularBrands);
+    //   expect(cacheSpy).toHaveBeenCalledWith('popular-brands', limit, xDomain);
+    //   expect(databaseService.getPool).not.toHaveBeenCalled();
+    // });
+
+    it('should query database and return results', async () => {
       const limit = 5;
       const xDomain = 'test.ru';
-      const cacheSpy = jest
-        .spyOn(cacheService, 'get')
-        .mockResolvedValue(mockPopularBrands);
-
-      // Act
-      const result = await service.findAllPopularBrands(limit, xDomain);
-
-      // Assert
-      expect(result).toEqual(mockPopularBrands);
-      expect(cacheSpy).toHaveBeenCalledWith('popular-brands', limit, xDomain);
-      expect(sql.connect).not.toHaveBeenCalled();
-    });
-
-    it('should query database when cache is empty', async () => {
-      // Arrange
-      const limit = 5;
-      const xDomain = 'test.ru';
-      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
-      jest.spyOn(cacheService, 'set').mockResolvedValue(undefined);
 
       const mockResult = {
         recordset: [
@@ -241,85 +211,76 @@ describe('TiresService', () => {
 
       mockPool.request().query.mockResolvedValue(mockResult);
 
-      // Act
       const result = await service.findAllPopularBrands(limit, xDomain);
 
-      // Assert
       expect(result).toBeDefined();
-      expect(sql.connect).toHaveBeenCalled();
+      expect(databaseService.getPool).toHaveBeenCalled();
       expect(mockPool.request).toHaveBeenCalled();
     });
   });
 
-  describe('findAllPopularBrandModels', () => {
-    it('should return cached data when available', async () => {
-      // Arrange
-      const brandId = 'michelin';
-      const xDomain = 'test.ru';
-      const cacheSpy = jest
-        .spyOn(cacheService, 'get')
-        .mockResolvedValue(mockBrandModels);
+  // describe('findAllPopularBrandModels', () => {
+  //   it('should return cached data when available', async () => {
+  //     // Arrange
+  //     const brandId = 'michelin';
+  //     const xDomain = 'test.ru';
+  //
+  //     // Act
+  //     const result = await service.findAllPopularBrandModels(brandId, xDomain);
+  //
+  //     // Assert
+  //     expect(result).toEqual(mockBrandModels);
+  //     expect(databaseService.getPool).not.toHaveBeenCalled();
+  //   });
 
-      // Act
-      const result = await service.findAllPopularBrandModels(brandId, xDomain);
+  it('should query database when cache is empty', async () => {
+    // Arrange
+    const brandId = 'michelin';
+    const xDomain = 'test.ru';
 
-      // Assert
-      expect(result).toEqual(mockBrandModels);
-      expect(cacheSpy).toHaveBeenCalledWith('brand-models', brandId, xDomain);
-      expect(sql.connect).not.toHaveBeenCalled();
-    });
+    const mockResult = {
+      recordset: [
+        {
+          ID: 1,
+          ModelName: 'Pilot Sport',
+          Season: 1,
+          SeasonName: 'Summer',
+          rn: 1,
+        },
+      ],
+    };
 
-    it('should query database when cache is empty', async () => {
-      // Arrange
-      const brandId = 'michelin';
-      const xDomain = 'test.ru';
-      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
-      jest.spyOn(cacheService, 'set').mockResolvedValue(undefined);
+    // Mock brand query result
+    const mockBrandResult = {
+      recordset: [
+        {
+          ID: 1,
+          Name: 'Michelin',
+        },
+      ],
+    };
 
-      const mockResult = {
-        recordset: [
-          {
-            ID: 1,
-            ModelName: 'Pilot Sport',
-            Season: 1,
-            SeasonName: 'Summer',
-            rn: 1,
-          },
-        ],
-      };
+    // Mock the request method to return different results for different queries
+    mockPool
+      .request()
+      .query.mockResolvedValueOnce(mockBrandResult) // First call for brand query
+      .mockResolvedValueOnce(mockResult); // Second call for models query
 
-      // Mock brand query result
-      const mockBrandResult = {
-        recordset: [
-          {
-            ID: 1,
-            Name: 'Michelin',
-          },
-        ],
-      };
+    // Act
+    const result = await service.findAllPopularBrandModels(brandId, xDomain);
 
-      // Mock the request method to return different results for different queries
-      mockPool.request().query
-        .mockResolvedValueOnce(mockBrandResult) // First call for brand query
-        .mockResolvedValueOnce(mockResult);     // Second call for models query
-
-      // Act
-      const result = await service.findAllPopularBrandModels(brandId, xDomain);
-
-      // Assert
-      expect(result).toBeDefined();
-      expect(sql.connect).toHaveBeenCalled();
-      expect(mockPool.request).toHaveBeenCalled();
-    });
+    // Assert
+    expect(result).toBeDefined();
+    expect(databaseService.getPool).toHaveBeenCalled();
+    expect(mockPool.request).toHaveBeenCalled();
   });
+  // });
 
   describe('Configuration', () => {
-    it('should use correct database configuration', async () => {
+    it('should use correct database configuration via DatabaseService', async () => {
       // Arrange
       const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
       const xDomain = 'test.ru';
-      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
-      jest.spyOn(cacheService, 'set').mockResolvedValue(undefined);
 
       const mockResult = { recordset: [] };
       mockPool.request().query.mockResolvedValue(mockResult);
@@ -328,10 +289,7 @@ describe('TiresService', () => {
       await service.findAllPopularSize(query, xDomain);
 
       // Assert
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_HOST');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_DATABASE');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_USERNAME');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_PASSWORD');
+      expect(databaseService.getPool).toHaveBeenCalled();
     });
   });
 });

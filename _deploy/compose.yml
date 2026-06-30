@@ -1,0 +1,6 @@
+include:
+  - './services/api.compose.yml'
+  - "./services/redis.compose.yml"
+
+networks:
+  dokploy-network:

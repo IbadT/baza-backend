@@ -1,22 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
-import { CacheService } from 'src/cache/cacheService.service';
+// import { CacheService } from 'src/cache/cacheService.service';
 import { ConfigService } from '@nestjs/config';
 import { GetProductQueryDTO } from './dto/get-product-query.dto';
+import { DatabaseService } from 'src/database/database.service';
 import * as sql from 'mssql';
-
-// Mock mssql module
-jest.mock('mssql', () => ({
-  connect: jest.fn(),
-  Int: 'Int',
-  VarChar: 'VarChar',
-}));
 
 describe('ProductsService', () => {
   let service: ProductsService;
-  let cacheService: CacheService;
+  // let cacheService: CacheService;
   let configService: ConfigService;
-  let mockPool: any;
+  let databaseService: DatabaseService;
+  let mockPool: {
+    request: jest.Mock;
+  };
 
   // Mock data
   const mockProducts = {
@@ -53,7 +50,7 @@ describe('ProductsService', () => {
     category: 'tires',
     page: 1,
     limit: 10,
-    sortdBy: 'price_asc',
+    sortBy: 'price_asc',
   };
 
   beforeEach(async () => {
@@ -68,18 +65,16 @@ describe('ProductsService', () => {
       }),
     };
 
-    (sql.connect as jest.Mock).mockResolvedValue(mockPool);
-
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
-        {
-          provide: CacheService,
-          useValue: {
-            get: jest.fn(),
-            set: jest.fn(),
-          },
-        },
+        // {
+        //   provide: CacheService,
+        //   useValue: {
+        //     get: jest.fn(),
+        //     set: jest.fn(),
+        //   },
+        // },
         {
           provide: ConfigService,
           useValue: {
@@ -93,14 +88,27 @@ describe('ProductsService', () => {
               };
               return config[key];
             }),
+            get: jest.fn((key: string) => {
+              const config: Record<string, string> = {
+                PHOTOS_BASE_URL: 'https://example.com/images/',
+              };
+              return config[key];
+            }),
+          },
+        },
+        {
+          provide: DatabaseService,
+          useValue: {
+            getPool: jest.fn().mockReturnValue(mockPool),
           },
         },
       ],
     }).compile();
 
-    service = module.get<ProductsService>(ProductsService);
-    cacheService = module.get<CacheService>(CacheService);
-    configService = module.get<ConfigService>(ConfigService);
+    service = moduleRef.get<ProductsService>(ProductsService);
+    // cacheService = moduleRef.get<CacheService>(CacheService);
+    configService = moduleRef.get<ConfigService>(ConfigService);
+    databaseService = moduleRef.get<DatabaseService>(DatabaseService);
   });
 
   afterEach(() => {
@@ -143,19 +151,18 @@ describe('ProductsService', () => {
         rowsAffected: [1],
       };
 
-      // Mock cache.get to return null (no cache hit)
-      (cacheService.get as jest.Mock).mockResolvedValue(null);
-      
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
-      const result = await service.findAllProductsByCategory(mockQuery, xDomain);
+      const result = await service.findAllProductsByCategory(
+        mockQuery,
+        xDomain,
+      );
 
       // Assert
       expect(result).toBeDefined();
       expect((result as any)?.success).toBe(true);
       expect((result as any)?.data).toHaveLength(1);
-      expect(sql.connect).toHaveBeenCalled();
       expect(mockPool.request).toHaveBeenCalled();
     });
 
@@ -165,7 +172,7 @@ describe('ProductsService', () => {
         category: 'wheels',
         page: 1,
         limit: 10,
-        sortdBy: 'price_asc',
+        sortBy: 'price_asc',
       };
       const xDomain = 'test.ru';
       const mockResult = {
@@ -194,19 +201,19 @@ describe('ProductsService', () => {
         rowsAffected: [1],
       };
 
-      // Mock cache.get to return null (no cache hit)
-      (cacheService.get as jest.Mock).mockResolvedValue(null);
-      
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
-      const result = await service.findAllProductsByCategory(wheelQuery, xDomain);
+      const result = await service.findAllProductsByCategory(
+        wheelQuery,
+        xDomain,
+      );
 
       // Assert
       expect(result).toBeDefined();
       expect((result as any)?.success).toBe(true);
       expect((result as any)?.data).toHaveLength(1);
-      expect(sql.connect).toHaveBeenCalled();
+      expect(mockPool.request).toHaveBeenCalled();
     });
 
     it('should handle different sorting options correctly', async () => {
@@ -215,7 +222,7 @@ describe('ProductsService', () => {
         category: 'tires',
         page: 1,
         limit: 10,
-        sortdBy: 'price_desc',
+        sortBy: 'price_desc',
       };
       const xDomain = 'test.ru';
       const mockResult = { recordset: [], rowsAffected: [0] };
@@ -226,11 +233,13 @@ describe('ProductsService', () => {
 
       // Assert
       expect(mockPool.request().query).toHaveBeenCalledWith(
-        expect.stringContaining('ORDER BY CASE WHEN pa.WholePrice IS NULL THEN 1 ELSE 0 END, pa.WholePrice DESC')
+        expect.stringContaining(
+          'ORDER BY CASE WHEN pa.WholePrice IS NULL THEN 1 ELSE 0 END, pa.WholePrice DESC',
+        ),
       );
     });
 
-    it('should use default sorting when sortdBy is not provided', async () => {
+    it('should use default sorting when sortBy is not provided', async () => {
       // Arrange
       const defaultQuery: GetProductQueryDTO = {
         category: 'tires',
@@ -246,7 +255,9 @@ describe('ProductsService', () => {
 
       // Assert
       expect(mockPool.request().query).toHaveBeenCalledWith(
-        expect.stringContaining('ORDER BY CASE WHEN pa.WholePrice IS NULL THEN 1 ELSE 0 END, pa.WholePrice ASC')
+        expect.stringContaining(
+          'ORDER BY CASE WHEN pa.WholePrice IS NULL THEN 1 ELSE 0 END, pa.WholePrice ASC',
+        ),
       );
     });
 
@@ -256,7 +267,7 @@ describe('ProductsService', () => {
         category: 'tires',
         page: 3,
         limit: 5,
-        sortdBy: 'price_asc',
+        sortBy: 'price_asc',
       };
       const xDomain = 'test.ru';
       const mockResult = { recordset: [], rowsAffected: [0] };
@@ -266,31 +277,43 @@ describe('ProductsService', () => {
       await service.findAllProductsByCategory(paginationQuery, xDomain);
 
       // Assert
-      expect(mockPool.request().input).toHaveBeenCalledWith('offset', 'Int', 10);
-      expect(mockPool.request().input).toHaveBeenCalledWith('limit', 'Int', 5);
+      expect(mockPool.request().input).toHaveBeenCalledWith(
+        'offset',
+        sql.Int,
+        10,
+      );
+      expect(mockPool.request().input).toHaveBeenCalledWith(
+        'limit',
+        sql.Int,
+        5,
+      );
     });
 
     it('should handle database errors gracefully', async () => {
       // Arrange
       const xDomain = 'test.ru';
-      (sql.connect as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
+      (databaseService.getPool as jest.Mock).mockImplementation(() => {
+        throw new Error('Database connection failed');
+      });
 
       // Act & Assert
-      await expect(service.findAllProductsByCategory(mockQuery, xDomain)).rejects.toThrow('Database connection failed');
+      await expect(
+        service.findAllProductsByCategory(mockQuery, xDomain),
+      ).rejects.toThrow('Database connection failed');
     });
 
     it('should handle empty results', async () => {
       // Arrange
       const xDomain = 'test.ru';
       const mockResult = { recordset: [], rowsAffected: [0] };
-      
-      // Mock cache.get to return null (no cache hit)
-      (cacheService.get as jest.Mock).mockResolvedValue(null);
-      
+
       mockPool.request().query.mockResolvedValue(mockResult);
 
       // Act
-      const result = await service.findAllProductsByCategory(mockQuery, xDomain);
+      const result = await service.findAllProductsByCategory(
+        mockQuery,
+        xDomain,
+      );
 
       // Assert
       expect(result).toBeDefined();
@@ -300,21 +323,20 @@ describe('ProductsService', () => {
     });
   });
 
-  describe('Configuration', () => {
-    it('should use correct database configuration', async () => {
-      // Arrange
-      const xDomain = 'test.ru';
-      const mockResult = { recordset: [], rowsAffected: [0] };
-      mockPool.request().query.mockResolvedValue(mockResult);
-
-      // Act
-      await service.findAllProductsByCategory(mockQuery, xDomain);
-
-      // Assert
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_HOST');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_DATABASE');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_USERNAME');
-      expect(configService.getOrThrow).toHaveBeenCalledWith('DB_PASSWORD');
-    });
-  });
+  // describe('Configuration', () => {
+  //   it('should use correct redis ttl configuration', async () => {
+  //     // Arrange
+  //     const xDomain = 'test.ru';
+  //     const mockResult = { recordset: [], rowsAffected: [0] };
+  //     mockPool.request().query.mockResolvedValue(mockResult);
+  //
+  //     // Act
+  //     await service.findAllProductsByCategory(mockQuery, xDomain);
+  //
+  //     // Assert
+  //     expect(configService.getOrThrow).toHaveBeenCalledWith(
+  //       'REDIS_DEFAULT_PRODUCTS_TTL',
+  //     );
+  //   });
+  // });
 });

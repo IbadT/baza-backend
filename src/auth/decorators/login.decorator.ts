@@ -28,18 +28,19 @@ export const LoginApiDocs = () => {
 **Примечание:** Пароли в обеих системах хешированы, требуется дополнительная логика проверки.
       `,
     }),
-    ApiHeader({
-      name: 'X-Domain',
-      description: 'Домен для фильтрации данных (например: domain.ru, domain.by)',
-      required: true,
-      example: 'domain.ru',
-    }),
-    ApiHeader({
-      name: 'X-API-Key',
-      description: 'Секретный ключ домена для авторизации',
-      required: true,
-      example: 'test-api-key-123',
-    }),
+    // ApiHeader({
+    //   name: 'X-Domain',
+    //   description:
+    //     'Домен для фильтрации данных (например: domain.ru, domain.by)',
+    //   required: true,
+    //   example: 'domain.ru',
+    // }),
+    // ApiHeader({
+    //   name: 'X-API-Key',
+    //   description: 'Секретный ключ домена для авторизации',
+    //   required: true,
+    //   example: 'test-api-key-123',
+    // }),
     ApiBody({ type: LoginUserDto }),
     // Успешный ответ
     ApiResponse({
@@ -48,14 +49,16 @@ export const LoginApiDocs = () => {
       schema: {
         type: 'object',
         properties: {
-            accessToken: {
-              type: 'string',
-              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU3NTkxOTQ2fQ.6YjlOdQyqqLhoJ9g0wIrXsKDMgNNOvEHMlKZthwWHCM',
-            },
-            refreshToken: {
-              type: 'string',
-              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU4MTk1ODQ2fQ.Sy_-nUq7gMovguNT0He8VQKS6kuW185kn_NtLA8cXJI',
-            },
+          accessToken: {
+            type: 'string',
+            example:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU3NTkxOTQ2fQ.6YjlOdQyqqLhoJ9g0wIrXsKDMgNNOvEHMlKZthwWHCM',
+          },
+          refreshToken: {
+            type: 'string',
+            example:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU0ODcxNGIxLTllNDctNGQ4My05OGNmLWRmNjk2NmZiYWI1MCIsImVtYWlsIjoiYUBhLmNvbSIsInJvbGVzIjoiQWRtaW4sVXNlciIsImlhdCI6MTc1NzU5MTA0NiwiZXhwIjoxNzU4MTk1ODQ2fQ.Sy_-nUq7gMovguNT0He8VQKS6kuW185kn_NtLA8cXJI',
+          },
           // success: {
           //   type: 'boolean',
           //   example: true,
@@ -134,10 +137,10 @@ export const LoginApiDocs = () => {
         type: 'object',
         properties: {
           statusCode: { type: 'number', example: 400 },
-          message: { 
-            type: 'array', 
+          message: {
+            type: 'array',
             items: { type: 'string' },
-            example: ['Некорректный email', 'Пароль не может быть пустым']
+            example: ['Некорректный email', 'Пароль не может быть пустым'],
           },
           error: { type: 'string', example: 'Bad Request' },
         },
@@ -185,7 +188,10 @@ export const LoginApiDocs = () => {
         type: 'object',
         properties: {
           statusCode: { type: 'number', example: 500 },
-          message: { type: 'string', example: 'Ошибка аутентификации: Connection timeout' },
+          message: {
+            type: 'string',
+            example: 'Ошибка аутентификации: Connection timeout',
+          },
           error: { type: 'string', example: 'Internal Server Error' },
         },
       },

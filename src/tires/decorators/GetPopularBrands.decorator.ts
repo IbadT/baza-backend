@@ -42,7 +42,7 @@ export const GetPopularBrandsApiDocs = () => {
                   example: 'Bridgestone',
                 },
                 popularity: {
-                  type: 'stirng',
+                  type: 'number',
                   description: 'Показатель популярности (0-100)',
                   example: '78',
                 },

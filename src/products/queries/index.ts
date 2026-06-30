@@ -1,1 +1,1 @@
-export const searchTiresProductsQueryString = "";
+export const searchTiresProductsQueryString = '';

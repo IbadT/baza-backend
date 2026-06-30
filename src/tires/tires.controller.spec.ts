@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TiresController } from './tires.controller';
 import { TiresService } from './tires.service';
 import { Request } from 'express';
-import { CacheService } from 'src/cache/cacheService.service';
+// import { CacheService } from 'src/cache/cacheService.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { XDomainGuard } from 'src/guards/x-domain.guard';
@@ -59,14 +59,15 @@ describe('TiresController', () => {
   };
 
   // Mock request with all required headers
-  const createMockRequest = (overrides: Partial<Request> = {}): Request => ({
-    headers: {
-      'x-domain': 'test.ru',
-      'x-api-key': 'test-api-key',
-      authorization: 'Bearer test-token',
-      ...overrides.headers,
-    },
-  } as unknown as Request);
+  const createMockRequest = (overrides: Partial<Request> = {}): Request =>
+    ({
+      headers: {
+        'x-domain': 'test.ru',
+        'x-api-key': 'test-api-key',
+        authorization: 'Bearer test-token',
+        ...overrides.headers,
+      },
+    }) as unknown as Request;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -80,24 +81,30 @@ describe('TiresController', () => {
             findAllPopularBrandModels: jest.fn(),
           },
         },
-        {
-          provide: CacheService,
-          useValue: {
-            get: jest.fn(),
-            set: jest.fn(),
-          },
-        },
+        // {
+        //   provide: CacheService,
+        //   useValue: {
+        //     get: jest.fn(),
+        //     set: jest.fn(),
+        //   },
+        // },
         {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('test-api-key,another-key'),
-            getOrThrow: jest.fn().mockReturnValue('your-super-secret-jwt-key-here-change-in-production'),
+            getOrThrow: jest
+              .fn()
+              .mockReturnValue(
+                'your-super-secret-jwt-key-here-change-in-production',
+              ),
           },
         },
         {
           provide: JwtService,
           useValue: {
-            verifyAsync: jest.fn().mockResolvedValue({ userId: 1, email: 'test@test.com' }),
+            verifyAsync: jest
+              .fn()
+              .mockResolvedValue({ userId: 1, email: 'test@test.com' }),
           },
         },
       ],
@@ -237,7 +244,10 @@ describe('TiresController', () => {
         .mockResolvedValue(mockBrandModels);
 
       // Act
-      const result = await controller.findAllPopularBrandModels(brandId, mockRequest);
+      const result = await controller.findAllPopularBrandModels(
+        brandId,
+        mockRequest,
+      );
 
       // Assert
       expect(result).toEqual(mockBrandModels);
@@ -254,7 +264,10 @@ describe('TiresController', () => {
         .mockResolvedValue(null);
 
       // Act
-      const result = await controller.findAllPopularBrandModels(brandId, mockRequest);
+      const result = await controller.findAllPopularBrandModels(
+        brandId,
+        mockRequest,
+      );
 
       // Assert
       expect(result).toBeNull();
@@ -270,7 +283,10 @@ describe('TiresController', () => {
         .mockResolvedValue(mockBrandModels);
 
       // Act
-      const result = await controller.findAllPopularBrandModels(brandId, mockRequest);
+      const result = await controller.findAllPopularBrandModels(
+        brandId,
+        mockRequest,
+      );
 
       // Assert
       expect(result).toEqual(mockBrandModels);
@@ -288,7 +304,9 @@ describe('TiresController', () => {
         .mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(controller.findAllPopularSize(query, mockRequest)).rejects.toThrow('Database error');
+      await expect(
+        controller.findAllPopularSize(query, mockRequest),
+      ).rejects.toThrow('Database error');
       expect(serviceSpy).toHaveBeenCalledWith(query, 'test.ru');
     });
   });
@@ -296,7 +314,9 @@ describe('TiresController', () => {
   describe('Header Processing', () => {
     it('should extract x-domain header correctly', async () => {
       // Arrange
-      const mockRequest = createMockRequest({ headers: { 'x-domain': 'custom.ru' } });
+      const mockRequest = createMockRequest({
+        headers: { 'x-domain': 'custom.ru' },
+      });
       const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
       const serviceSpy = jest
         .spyOn(tiresService, 'findAllPopularSize')
@@ -311,7 +331,9 @@ describe('TiresController', () => {
 
     it('should handle different x-domain header formats', async () => {
       // Arrange
-      const mockRequest = createMockRequest({ headers: { 'x-domain': 'test.by' } });
+      const mockRequest = createMockRequest({
+        headers: { 'x-domain': 'test.by' },
+      });
       const query = { minDiameter: 16, maxDiameter: 20, limitPerDiameter: 3 };
       const serviceSpy = jest
         .spyOn(tiresService, 'findAllPopularSize')

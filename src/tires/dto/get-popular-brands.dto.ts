@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsPositive } from 'class-validator';
 
-export class GetPupularBrandsQueryDTO {
+export class GetPopularBrandsQueryDTO {
   @ApiProperty({
     example: 5,
     default: 10,

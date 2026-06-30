@@ -4,12 +4,15 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -23,7 +26,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = exception.getStatus();
       message = exception.message;
 
-      // Handle ValidationPipe errors
       const responseBody = exception.getResponse();
       if (
         typeof responseBody === 'object' &&
@@ -40,7 +42,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       message = exception.message;
 
-      // Map common error names to HTTP status codes
       if (exception.name === 'ValidationError') {
         status = HttpStatus.BAD_REQUEST;
       } else if (exception.name === 'UnauthorizedError') {
@@ -54,14 +55,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = exception;
     }
 
-    // Log the error for debugging
-    console.error(`[${new Date().toISOString()}] Error:`, {
-      status,
-      message,
-      path: request.path,
-      method: request.method,
-      exception: exception instanceof Error ? exception.stack : exception,
-    });
+    this.logger.error(
+      `${request.method} ${request.path} → ${status} | ${message}`,
+      exception instanceof Error ? exception.stack : String(exception),
+    );
 
     response.status(status).json({
       success: false,

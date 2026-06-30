@@ -29,7 +29,7 @@ export const popular_brands_data = {
   ],
 };
 
-export const pupular_brand_models_data = {
+export const popular_brand_models_data = {
   brand: {
     id: 'michelin',
     name: 'Michelin',

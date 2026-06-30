@@ -6,5 +6,10 @@ cp .env.example .env
 
 ## Запустить сервер
 ```bash
-docker compose up --build -d
+npm run start:docker
 ```
+
+# Хост документации dev режима
+http://localhost:3000/swagger#/
+
+xDomain = 548714b1-9e47-4d83-98cf-df6966fbab50

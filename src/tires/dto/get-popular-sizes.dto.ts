@@ -9,7 +9,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class GetPupularSizesQueryDTO {
+export class GetPopularSizesQueryDTO {
   @ApiProperty({
     example: 16,
     description: 'Минимальный диаметр (в дюймах) для включения в результаты.',

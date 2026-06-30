@@ -8,12 +8,16 @@ import { XDomainGuard } from 'src/guards/x-domain.guard';
 import { XApiKeyGuard } from 'src/guards/x-api-key.guard';
 import { getXDomainHeader } from 'src/helpers/get_xDomain_header.helper';
 import { AuthGuard } from 'src/guards/auth.guard';
+import { AppLogger } from 'src/logger/logger.service';
 
 @ApiTags('Products')
 @ApiBearerAuth('JWT-auth')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly logger: AppLogger,
+  ) {}
 
   // @Get('/debug-sentry')
   // getError() {
@@ -36,11 +40,17 @@ export class ProductsController {
   ) {
     const startTime = Date.now();
     try {
-      const xDomain = getXDomainHeader(req);
-      return await this.productsService.findAllProductsByCategory({...query, page: Number(query.page), limit: Number(query.limit)}, xDomain);
+      const userId = getXDomainHeader(req);
+      return await this.productsService.findAllProductsByCategory(
+        { ...query, page: Number(query.page), limit: Number(query.limit) },
+        userId,
+      );
     } finally {
       const executionTime = Date.now() - startTime;
-      console.log(`⏱️  [ProductsController.findAllProductsByCategory] Execution time: ${executionTime}ms`);
+      this.logger.log(
+        `[ProductsController.findAllProductsByCategory] Execution time: ${executionTime}ms`,
+        'ProductsController',
+      );
     }
   }
 }

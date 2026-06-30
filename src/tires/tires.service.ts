@@ -4,113 +4,49 @@ import {
   IResponsePopularBrands,
   IResponsePopularSize,
 } from './types/types';
-import { CacheService } from 'src/cache/cacheService.service';
-import { ConfigService } from '@nestjs/config';
-import { GetPupularSizesQueryDTO } from './dto/get-popular-sizes.dto';
-import * as sql from 'mssql';
-
-interface TireSizeRecord {
-  Diameter: number;
-  Width: number;
-  AspectRatio: number;
-  Popularity: number;
-}
-
-interface BrandRecord {
-  ID: number;
-  Name: string;
-  Popularity: number;
-}
-
-interface ModelRecord {
-  ID: number;
-  ModelName: string;
-  Season: number;
-  SeasonName: string;
-  rn: number;
-}
+import { GetPopularSizesQueryDTO } from './dto/get-popular-sizes.dto';
+import { AppLogger } from 'src/logger/logger.service';
+import { TireRepository } from 'src/database/repositories/tire.repository';
 
 @Injectable()
 export class TiresService {
   constructor(
-    private readonly cache: CacheService,
-    private readonly configService: ConfigService,
+    private readonly logger: AppLogger,
+    private readonly tireRepo: TireRepository,
   ) {}
 
-  private get config() {
-    return {
-      server: this.configService.getOrThrow<string>('DB_HOST'),
-      database: this.configService.getOrThrow<string>('DB_DATABASE'),
-      user: this.configService.getOrThrow<string>('DB_USERNAME'),
-      password: this.configService.getOrThrow<string>('DB_PASSWORD'),
-      options: {
-        encrypt: false,
-        trustServerCertificate: true,
-      },
-    };
-  }
-
   async findAllPopularSize(
-    query: GetPupularSizesQueryDTO,
-    xDomain: string,
+    query: GetPopularSizesQueryDTO,
+    _userId: string,
   ): Promise<IResponsePopularSize | null> {
-    const cacheKey = 'popular-sizes';
-    const params = { ...query, xDomain };
-
-    const cachedData = (await this.cache.get(
-      cacheKey,
-      params.minDiameter,
-      params.maxDiameter,
-      params.limitPerDiameter || 'default',
-      xDomain,
-    )) as IResponsePopularSize;
-    if (cachedData) return cachedData;
+    this.logger.log('PopularSizes: запрос к БД...', 'TiresService');
 
     const limitPerDiameter = query.limitPerDiameter || 5;
 
-    const queryString = `
-      WITH RankedSizes AS (
-        SELECT 
-          Diameter,
-          Width,
-          Height as AspectRatio,
-          TotalCount as Popularity,
-          ROW_NUMBER() OVER (PARTITION BY Diameter ORDER BY TotalCount DESC) as rn
-        FROM TireTypesizesCube
-        WHERE Diameter BETWEEN @minDiameter AND @maxDiameter
-          AND Height IS NOT NULL
-          AND TotalCount > 0
-      )
-      SELECT 
-        Diameter,
-        Width,
-        AspectRatio,
-        Popularity
-      FROM RankedSizes
-      WHERE rn <= @limitPerDiameter
-      ORDER BY Diameter ASC, Popularity DESC
-    `;
+    const records = await this.tireRepo.findPopularSizes(
+      query.minDiameter,
+      query.maxDiameter,
+      limitPerDiameter,
+    );
 
-    const pool = await sql.connect(this.config);
-    const result = await pool
-      .request()
-      .input('minDiameter', sql.Int, query.minDiameter)
-      .input('maxDiameter', sql.Int, query.maxDiameter)
-      .input('limitPerDiameter', sql.Int, limitPerDiameter)
-      .query(queryString);
+    this.logger.log(
+      `PopularSizes: получено ${records.length} записей из БД`,
+      'TiresService',
+    );
 
-    // Transform the flat result into the required nested structure
-    const diametersMap = new Map<number, { diameter: number; sizes: any[] }>();
+    const diametersMap = new Map<
+      number,
+      {
+        diameter: number;
+        sizes: { width: number; aspectRatio: number; popularity: number }[];
+      }
+    >();
 
-    (result.recordset as TireSizeRecord[]).forEach((row) => {
+    records.forEach((row) => {
       const diameter = parseInt(String(row.Diameter));
       if (!diametersMap.has(diameter)) {
-        diametersMap.set(diameter, {
-          diameter,
-          sizes: [],
-        });
+        diametersMap.set(diameter, { diameter, sizes: [] });
       }
-
       diametersMap.get(diameter)!.sizes.push({
         width: parseInt(String(row.Width)),
         aspectRatio: parseInt(String(row.AspectRatio)),
@@ -123,19 +59,9 @@ export class TiresService {
         (a, b) => a.diameter - b.diameter,
       ),
     };
-
-    await this.cache.set(
-      {
-        baseKey: cacheKey,
-        ttl: Number(
-          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
-        ),
-        value: response,
-      },
-      params.minDiameter,
-      params.maxDiameter,
-      params.limitPerDiameter || 'default',
-      xDomain,
+    this.logger.log(
+      `PopularSizes: сгруппировано по ${response.popularSizes.length} диаметрам`,
+      'TiresService',
     );
 
     return response;
@@ -143,128 +69,54 @@ export class TiresService {
 
   async findAllPopularBrands(
     limit: number,
-    xDomain: string,
+    _userId: string,
   ): Promise<IResponsePopularBrands | null> {
-    const cacheKey = 'popular-brands';
+    this.logger.log('PopularBrands: запрос к БД...', 'TiresService');
 
-    const cachedData = (await this.cache.get(
-      cacheKey,
-      limit,
-      xDomain,
-    )) as IResponsePopularBrands;
-    if (cachedData) return cachedData;
+    const records = await this.tireRepo.findPopularBrands(limit);
 
-    const queryString = `
-      SELECT TOP (@limit)
-        v.ID,
-        v.Name,
-        COUNT(pa.ProductID) as Popularity
-      FROM Vendors v
-      JOIN Categories c ON c.ID = v.CategoryID
-      JOIN Models m ON m.VendorID = v.ID
-      JOIN Products p ON p.ModelID = m.ID
-      LEFT JOIN PriceActual pa ON pa.ProductID = p.ID
-      WHERE c.URL = 'tires'
-        AND pa.ProductID IS NOT NULL
-      GROUP BY v.ID, v.Name
-      ORDER BY COUNT(pa.ProductID) DESC
-    `;
+    this.logger.log(
+      `PopularBrands: получено ${records.length} брендов из БД`,
+      'TiresService',
+    );
 
-    const pool = await sql.connect(this.config);
-    const result = await pool
-      .request()
-      .input('limit', sql.Int, limit)
-      .query(queryString);
-
-    // Transform the result into the required format
-    const popularBrands = (result.recordset as BrandRecord[]).map((row) => ({
+    const popularBrands = records.map((row) => ({
       id: row.Name.toLowerCase().replace(/\s+/g, '-'),
       name: row.Name,
       popularity: row.Popularity,
       logoUrl: `/brands/${row.Name.toLowerCase().replace(/\s+/g, '-')}.png`,
     }));
 
-    const response: IResponsePopularBrands = {
-      popularBrands,
-    };
-
-    await this.cache.set(
-      {
-        baseKey: cacheKey,
-        ttl: Number(
-          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
-        ),
-        value: response,
-      },
-      limit,
-      xDomain,
-    );
-
-    return response;
+    return { popularBrands };
   }
 
   async findAllPopularBrandModels(
     brandId: string,
-    xDomain: string,
+    _userId: string,
   ): Promise<IResponsePopularBrandModels | null> {
-    const cacheKey = 'brand-models';
+    this.logger.log(
+      `BrandModels: запрос к БД для brandId=${brandId}...`,
+      'TiresService',
+    );
 
-    const cachedData = (await this.cache.get(
-      cacheKey,
-      brandId,
-      xDomain,
-    )) as IResponsePopularBrandModels;
-    if (cachedData) return cachedData;
+    const brand = await this.tireRepo.findBrandBySlug(brandId);
 
-    const pool = await sql.connect(this.config);
-
-    // First, get the brand information
-    const brandQuery = `
-      SELECT v.ID, v.Name
-      FROM Vendors v
-      JOIN Categories c ON c.ID = v.CategoryID
-      WHERE c.URL = 'tires' 
-        AND (LOWER(REPLACE(v.Name, ' ', '-')) = @brandId OR LOWER(v.Name) = @brandId)
-    `;
-
-    const brandResult = await pool
-      .request()
-      .input('brandId', sql.VarChar, brandId.toLowerCase())
-      .query(brandQuery);
-
-    if (brandResult.recordset.length === 0) {
+    if (!brand) {
+      this.logger.warn(
+        `BrandModels: бренд не найден для brandId=${brandId}`,
+        'TiresService',
+      );
       return null;
     }
 
-    const brand = brandResult.recordset[0] as { ID: number; Name: string };
+    const models = await this.tireRepo.findBrandModels(brand.ID);
 
-    const modelsQuery = `
-      SELECT 
-        m.ID as ModelID,
-        m.Name as ModelName,
-        COUNT(pa.ProductID) as ProductCount,
-        pa.Season,
-        CASE 
-          WHEN pa.Season = 0 THEN 'summer'
-          WHEN pa.Season = 1 THEN 'winter'
-          WHEN pa.Season = 2 THEN 'all-season'
-          ELSE ''
-        END as SeasonName,
-        ROW_NUMBER() OVER (PARTITION BY m.ID ORDER BY COUNT(pa.ProductID) DESC) as rn
-      FROM Models m
-      JOIN Products p ON p.ModelID = m.ID
-      LEFT JOIN PriceActual pa ON pa.ProductID = p.ID
-      WHERE m.VendorID = @vendorId
-        AND pa.ProductID IS NOT NULL
-      GROUP BY m.ID, m.Name, pa.Season
-    `;
+    this.logger.log(
+      `BrandModels: получено ${models.length} моделей из БД`,
+      'TiresService',
+    );
 
-    const modelsResult = await pool
-      .request()
-      .input('vendorId', sql.Int, brand.ID)
-      .query(modelsQuery);
-
-    const uniqueModels = (modelsResult.recordset as ModelRecord[])
+    const uniqueModels = models
       .filter((row) => parseInt(String(row.rn)) === 1)
       .map((row) => ({
         id: row.ModelName.toLowerCase()
@@ -278,7 +130,7 @@ export class TiresService {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const response: IResponsePopularBrandModels = {
+    return {
       brand: {
         id: brand.Name.toLowerCase().replace(/\s+/g, '-'),
         name: brand.Name,
@@ -286,19 +138,5 @@ export class TiresService {
       },
       models: uniqueModels,
     };
-
-    await this.cache.set(
-      {
-        baseKey: cacheKey,
-        ttl: Number(
-          this.configService.getOrThrow<string>('REDIS_DEFAULT_PRODUCTS_TTL'),
-        ),
-        value: response,
-      },
-      brandId,
-      xDomain,
-    );
-
-    return response;
   }
 }

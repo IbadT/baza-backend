@@ -61,7 +61,7 @@ export const GetPopularBrandModelsApiDocs = () => {
                   description: 'Название модели',
                   example: 'Primacy 4',
                 },
-                logoUrl: {
+                imageUrl: {
                   type: 'string',
                   description: 'URL изображения модели',
                   example: '/models/primacy-4.jpg',

@@ -6,8 +6,8 @@ import {
   IResponsePopularBrands,
   IResponsePopularSize,
 } from './types/types';
-import { GetPupularSizesQueryDTO } from './dto/get-popular-sizes.dto';
-import { GetPupularBrandsQueryDTO } from './dto/get-popular-brands.dto';
+import { GetPopularSizesQueryDTO } from './dto/get-popular-sizes.dto';
+import { GetPopularBrandsQueryDTO } from './dto/get-popular-brands.dto';
 import { GetPopularBrandModelsApiDocs } from './decorators/GetPopularBrandModels.decorator';
 import { GetPopularSizesApiDocs } from './decorators/GetPopularSizes.decorator';
 import { GetPopularBrandsApiDocs } from './decorators/GetPopularBrands.decorator';
@@ -16,28 +16,35 @@ import { XDomainGuard } from 'src/guards/x-domain.guard';
 import { getXDomainHeader } from 'src/helpers/get_xDomain_header.helper';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { XApiKeyGuard } from 'src/guards/x-api-key.guard';
+import { AppLogger } from 'src/logger/logger.service';
 
 @ApiTags('Tires')
 @ApiBearerAuth('JWT-auth')
 @Controller('tires')
 export class TiresController {
-  constructor(private readonly tiresService: TiresService) {}
+  constructor(
+    private readonly tiresService: TiresService,
+    private readonly logger: AppLogger,
+  ) {}
 
   @GetPopularSizesApiDocs()
   @UseGuards(XDomainGuard, XApiKeyGuard, AuthGuard)
   @Get('popular-sizes')
   findAllPopularSize(
-    @Query() query: GetPupularSizesQueryDTO,
+    @Query() query: GetPopularSizesQueryDTO,
     @Req() req: Request,
   ): Promise<IResponsePopularSize | null> {
     const startTime = Date.now();
     try {
-      const xDomain = getXDomainHeader(req);
+      const userId = getXDomainHeader(req);
       // !!! limitPerDiameter опциональный может быть undefined
-      return this.tiresService.findAllPopularSize(query, xDomain);
+      return this.tiresService.findAllPopularSize(query, userId);
     } finally {
       const executionTime = Date.now() - startTime;
-      console.log(`⏱️  [TiresController.findAllPopularSize] Execution time: ${executionTime}ms`);
+      this.logger.log(
+        `[TiresController.findAllPopularSize] Execution time: ${executionTime}ms`,
+        'TiresController',
+      );
     }
   }
 
@@ -45,18 +52,21 @@ export class TiresController {
   @UseGuards(XDomainGuard, XApiKeyGuard, AuthGuard)
   @Get('popular-brands')
   async findAllPopularBrands(
-    @Query() query: GetPupularBrandsQueryDTO,
+    @Query() query: GetPopularBrandsQueryDTO,
     @Req() req: Request,
   ): Promise<IResponsePopularBrands | null> {
     const startTime = Date.now();
     try {
       const { limit = 10 } = query;
 
-      const xDomain = getXDomainHeader(req);
-      return this.tiresService.findAllPopularBrands(limit, xDomain);
+      const userId = getXDomainHeader(req);
+      return this.tiresService.findAllPopularBrands(limit, userId);
     } finally {
       const executionTime = Date.now() - startTime;
-      console.log(`⏱️  [TiresController.findAllPopularBrands] Execution time: ${executionTime}ms`);
+      this.logger.log(
+        `[TiresController.findAllPopularBrands] Execution time: ${executionTime}ms`,
+        'TiresController',
+      );
     }
   }
 
@@ -69,11 +79,14 @@ export class TiresController {
   ): Promise<IResponsePopularBrandModels | null> {
     const startTime = Date.now();
     try {
-      const xDomain = getXDomainHeader(req);
-      return this.tiresService.findAllPopularBrandModels(brandId, xDomain);
+      const userId = getXDomainHeader(req);
+      return this.tiresService.findAllPopularBrandModels(brandId, userId);
     } finally {
       const executionTime = Date.now() - startTime;
-      console.log(`⏱️  [TiresController.findAllPopularBrandModels] Execution time: ${executionTime}ms`);
+      this.logger.log(
+        `[TiresController.findAllPopularBrandModels] Execution time: ${executionTime}ms`,
+        'TiresController',
+      );
     }
   }
 }

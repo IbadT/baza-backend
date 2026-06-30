@@ -13,10 +13,12 @@ export class XApiKeyGuard implements CanActivate {
 
   canActivate(ctx: ExecutionContext): boolean {
     const request = ctx.switchToHttp().getRequest<Request>();
-    const apiKey =
+    const rawApiKey =
       (request.headers as any)['x-api-key'] ||
       (request.headers as any)['X-API-Key'] ||
       (request.headers as any).xApiKey;
+
+    const apiKey = typeof rawApiKey === 'string' ? rawApiKey.trim() : rawApiKey;
 
     if (!apiKey || typeof apiKey !== 'string') {
       throw new BadRequestException('X-API-Key обязателен');

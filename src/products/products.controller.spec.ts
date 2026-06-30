@@ -3,7 +3,7 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { Request } from 'express';
 import { GetProductQueryDTO } from './dto/get-product-query.dto';
-import { CacheService } from 'src/cache/cacheService.service';
+// import { CacheService } from 'src/cache/cacheService.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { XDomainGuard } from 'src/guards/x-domain.guard';
@@ -51,18 +51,19 @@ describe('ProductsController', () => {
     category: 'tires',
     page: 1,
     limit: 10,
-    sortdBy: 'price_asc',
+    sortBy: 'price_asc',
   };
 
   // Mock request with all required headers
-  const createMockRequest = (overrides: Partial<Request> = {}): Request => ({
-    headers: {
-      'x-domain': 'test.ru',
-      'x-api-key': 'test-api-key',
-      authorization: 'Bearer test-token',
-      ...overrides.headers,
-    },
-  } as unknown as Request);
+  const createMockRequest = (overrides: Partial<Request> = {}): Request =>
+    ({
+      headers: {
+        'x-domain': 'test.ru',
+        'x-api-key': 'test-api-key',
+        authorization: 'Bearer test-token',
+        ...overrides.headers,
+      },
+    }) as unknown as Request;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -74,24 +75,30 @@ describe('ProductsController', () => {
             findAllProductsByCategory: jest.fn(),
           },
         },
-        {
-          provide: CacheService,
-          useValue: {
-            get: jest.fn(),
-            set: jest.fn(),
-          },
-        },
+        // {
+        //   provide: CacheService,
+        //   useValue: {
+        //     get: jest.fn(),
+        //     set: jest.fn(),
+        //   },
+        // },
         {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue('test-api-key,another-key'),
-            getOrThrow: jest.fn().mockReturnValue('your-super-secret-jwt-key-here-change-in-production'),
+            getOrThrow: jest
+              .fn()
+              .mockReturnValue(
+                'your-super-secret-jwt-key-here-change-in-production',
+              ),
           },
         },
         {
           provide: JwtService,
           useValue: {
-            verifyAsync: jest.fn().mockResolvedValue({ userId: 1, email: 'test@test.com' }),
+            verifyAsync: jest
+              .fn()
+              .mockResolvedValue({ userId: 1, email: 'test@test.com' }),
           },
         },
       ],
@@ -127,7 +134,10 @@ describe('ProductsController', () => {
         .mockResolvedValue(mockProducts);
 
       // Act
-      const result = await controller.findAllProductsByCategory(mockQuery, mockRequest);
+      const result = await controller.findAllProductsByCategory(
+        mockQuery,
+        mockRequest,
+      );
 
       // Assert
       expect(result).toEqual(mockProducts);
@@ -143,13 +153,17 @@ describe('ProductsController', () => {
         .mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(controller.findAllProductsByCategory(mockQuery, mockRequest)).rejects.toThrow('Database error');
+      await expect(
+        controller.findAllProductsByCategory(mockQuery, mockRequest),
+      ).rejects.toThrow('Database error');
       expect(serviceSpy).toHaveBeenCalledWith(mockQuery, 'test.ru');
     });
 
     it('should extract x-domain header correctly', async () => {
       // Arrange
-      const mockRequest = createMockRequest({ headers: { 'x-domain': 'custom.ru' } });
+      const mockRequest = createMockRequest({
+        headers: { 'x-domain': 'custom.ru' },
+      });
       const serviceSpy = jest
         .spyOn(productsService, 'findAllProductsByCategory')
         .mockResolvedValue(mockProducts);
@@ -161,5 +175,4 @@ describe('ProductsController', () => {
       expect(serviceSpy).toHaveBeenCalledWith(mockQuery, 'custom.ru');
     });
   });
-
 });

@@ -19,6 +19,7 @@ export const GetProductsByCategoryApiDocs = () => {
 **Поддерживаемые категории:**
 - \`tires\` - шины
 - \`wheels\` - диски  
+- \`accessories\` - аксессуары
 
 **Фильтры для шин:**
 - Размеры (width, height, diameter)
@@ -53,7 +54,7 @@ export const GetProductsByCategoryApiDocs = () => {
     // Основные параметры
     ApiQuery({
       name: 'category',
-      enum: ['tires', 'wheels'],
+      enum: ['tires', 'wheels', 'accessories'],
       required: true,
       description: 'Категория товаров для фильтрации',
       example: 'tires',
@@ -73,7 +74,7 @@ export const GetProductsByCategoryApiDocs = () => {
       example: 10,
     }),
     ApiQuery({
-      name: 'sortdBy',
+      name: 'sortBy',
       enum: ['price_asc', 'price_desc', 'rating_desc', 'newest'],
       required: false,
       description: 'Способ сортировки результатов',
@@ -186,10 +187,10 @@ export const GetProductsByCategoryApiDocs = () => {
                     id: { type: 'number', example: 123 },
                     name: { type: 'string', example: 'Pilot Sport 4' },
                     vendorId: { type: 'number', example: 789 },
-                    photos: { 
-                      type: 'array', 
+                    photos: {
+                      type: 'array',
                       items: { type: 'string' },
-                      example: ['photo1.jpg', 'photo2.jpg']
+                      example: ['photo1.jpg', 'photo2.jpg'],
                     },
                   },
                 },

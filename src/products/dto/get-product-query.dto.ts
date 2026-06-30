@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -17,42 +18,45 @@ export class GetProductQueryDTO {
     example: 'tires',
     description: 'Категория: wheels (диски)',
     required: true,
-    enum: ['tires', 'wheels'],
+    enum: ['tires', 'wheels', 'accessories'],
     // enum: ["wheels"],
   })
   @IsString({ message: 'Поле должно быть строкой' })
-  @IsIn(['tires', 'wheels'], {
+  @IsIn(['tires', 'wheels', 'accessories'], {
     message: 'Выбрана неверная категория',
   })
-  readonly category: string;
+  readonly category!: string;
 
   @ApiProperty({
     example: 1,
-    description: 'Номер страницы',
-    required: true,
+    description: 'Номер страницы (начиная с 1)',
+    required: false,
     minimum: 1,
     type: Number,
     default: 1,
   })
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
   @IsPositive()
   @Min(1, { message: 'Страница должна быть больше 0' })
-  readonly page: number;
+  readonly page?: number = 1;
 
   @ApiProperty({
-    example: 10,
+    example: 20,
     description: 'Количество товаров на странице',
-    required: true,
+    required: false,
     minimum: 1,
     type: Number,
-    default: 10,
+    default: 20,
   })
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
   @IsPositive()
   @Min(1, { message: 'Количество должно быть больше 0' })
-  readonly limit: number;
+  @Max(100, { message: 'Количество не может превышать 100' })
+  readonly limit?: number = 20;
 
   @ApiProperty({
     example: 'price_asc',
@@ -66,7 +70,7 @@ export class GetProductQueryDTO {
   @IsIn(['price_asc', 'price_desc', 'rating_desc', 'newest'], {
     message: 'Выбрана неверная сортировка',
   })
-  readonly sortdBy?: string;
+  readonly sortBy?: string;
 
   // ===== tires-only filters (optional) =====
   @ApiProperty({ required: false, type: Number, example: 275 })
